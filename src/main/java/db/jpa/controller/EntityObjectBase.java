@@ -22,7 +22,7 @@ public class EntityObjectBase {
     public final Integer getClusterByName(@NotNull final String clusterName) {
         try {
             return clusters
-                    .getAll()
+                    .getAll_()
                     .stream()
                     .filter(f -> f.getClusterName().equalsIgnoreCase(clusterName))
                     .findFirst()

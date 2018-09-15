@@ -6,9 +6,12 @@ import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.io.Serializable;
 import java.util.List;
 
@@ -167,11 +170,62 @@ public class GenericDAO<E> {
         return null;
     }
 
+    //Realization using createQuery() instate of createCriteria() what is deprecated, but much bigger
+    public List<E> getAll_() {
+        try {
+            session = sessionFactory.openSession();
+            transaction = session.beginTransaction();
+            CriteriaBuilder builder = session.getCriteriaBuilder();
+            CriteriaQuery<E> query = builder.createQuery(entityClass);
+            Root<E> root = query.from(entityClass); //object to define a range variable in FROM clause
+            query.select(root); //
+            Query<E> q = session.createQuery(query);
+            List<E> listOfEntityTable = q.getResultList(); //or q.getSingleResult() if need just single value
+            transaction.commit();
+            return listOfEntityTable;
+        } catch (HibernateException e) {
+            LOGGER.warn("Some problem with getting all entity\n");
+            if (transaction != null) transaction.rollback();
+            e.printStackTrace();
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+        return null;
+    }
+
     public void deleteAllEntity() {
         try {
             session = sessionFactory.openSession();
             transaction = session.beginTransaction();
             List<E> listOfEntityTable = session.createCriteria(entityClass).list();
+            for (E element : listOfEntityTable) {
+                session.delete(element);
+            }
+            transaction.commit();
+        } catch (HibernateException e) {
+            LOGGER.warn("Some problem with delete all entity\n");
+            if (transaction != null) transaction.rollback();
+            e.printStackTrace();
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
+    //Realization using createQuery() instate of createCriteria() what is deprecated, but much bigger
+    public void deleteAllEntity_() {
+        try {
+            session = sessionFactory.openSession();
+            transaction = session.beginTransaction();
+            CriteriaBuilder builder = session.getCriteriaBuilder();
+            CriteriaQuery<E> query = builder.createQuery(entityClass);
+            Root<E> root = query.from(entityClass);
+            query.select(root);
+            Query<E> q = session.createQuery(query);
+            List<E> listOfEntityTable = q.getResultList();
             for (E element : listOfEntityTable) {
                 session.delete(element);
             }
@@ -211,5 +265,37 @@ public class GenericDAO<E> {
             }
         }
         return 0;
+    }
+
+    //Realization using createQuery() instate of createCriteria() what is deprecated, but much bigger
+    public int truncateEntities_() {
+        int numberOfEntity = 0;
+        try {
+            session = sessionFactory.openSession();
+            transaction = session.beginTransaction();
+            CriteriaBuilder builder = session.getCriteriaBuilder();
+            CriteriaQuery<E> query = builder.createQuery(entityClass);
+            Root<E> root = query.from(entityClass);
+            query.select(root);
+            Query<E> q = session.createQuery(query);
+            List<E> listOfEntityTable = q.getResultList();
+            for (E element : listOfEntityTable) {
+                builder = session.getCriteriaBuilder();
+                CriteriaDelete<E> query_delete = builder.createCriteriaDelete(entityClass);
+                query.from(entityClass);
+                numberOfEntity = session.createQuery(query_delete).executeUpdate();
+            }
+            transaction.commit();
+            return numberOfEntity;
+        } catch (HibernateException e) {
+            LOGGER.warn("Some problem with truncate entity\n");
+            if (transaction != null) transaction.rollback();
+            e.printStackTrace();
+        }finally {
+            if (session != null){
+                session.close();
+            }
+        }
+        return numberOfEntity;
     }
 }
