@@ -5,7 +5,8 @@
 
     <test name="Algorithms smoke">
         <classes>
-            <class name="DBtest"/>
+            <!--<class name="DBtest"/>-->
+            <class name="SelenideTest"/>
         </classes>
     </test>
 
